@@ -1,4 +1,4 @@
-// import { bootstrapStreamers } from "./bootstrap";
+import { bootstrapStreamers } from "./bootstrap";
 import { startServer } from "./server";
 
 // bootstrapStreamers();

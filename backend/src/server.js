@@ -110,10 +110,10 @@ function setupCloseOnExit(server) {
     await server
       .close()
       .then(() => {
-        logger.info("Server successfully closed");
+        log.info("Server successfully closed");
       })
       .catch((e) => {
-        logger.warn("Something went wrong closing the server", e.stack);
+        log.warn("Something went wrong closing the server", e.stack);
       });
 
     // eslint-disable-next-line no-process-exit

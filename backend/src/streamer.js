@@ -8,9 +8,11 @@ export const addStreamer = (streamer) =>
   fetchF({
     method: "put",
     url: `/_users/org.couchdb.user:${streamer.name}`,
+    // url: `/_users/org.couchdb.user:${streamer.seed}`,
     data: {
       ...streamer,
       id: streamer.name,
+      // id: streamer.seed,
       roles: ["streamer", "user"],
       type: "user",
     },
