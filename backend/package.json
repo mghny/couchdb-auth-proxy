@@ -1,0 +1,34 @@
+{
+  "name": "couchdb-proxy-auth",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node .",
+    "build": "babel --extensions '.js' --delete-dir-on-start --out-dir dist --copy-files --no-copy-ignored src"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.21.0",
+    "cors": "^2.8.5",
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1",
+    "fluture": "^13.0.1",
+    "http-proxy-middleware": "^1.0.6",
+    "jsonwebtoken": "^8.5.1",
+    "monero-javascript": "^0.4.5",
+    "pouchdb": "^7.2.2",
+    "pouchdb-upsert": "^2.2.0",
+    "ramda": "^0.27.1",
+    "socket.io": "^2.3.0"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.12.1",
+    "@babel/core": "^7.12.3",
+    "@babel/preset-env": "^7.12.1",
+    "@babel/register": "^7.12.1",
+    "nodemon": "^2.0.6"
+  }
+}
