@@ -21,9 +21,9 @@ const authenticatedPouchFetch = (url, opts) => {
   return PouchDB.fetch(url, opts);
 };
 
-const localUserDB = new PouchDB(`user`);
+const localUserDB = new PouchDB(`profile`);
 const localConfigurationDB = new PouchDB(`configuration`);
-const remoteUserDB = new PouchDB(`${host}/user`, {
+const remoteUserDB = new PouchDB(`${host}/profile`, {
   fetch: authenticatedPouchFetch,
 });
 const remoteConfigurationDB = new PouchDB(`${host}/configuration`, {
@@ -55,6 +55,7 @@ const syncPouchDocumentEffect = (local, remote, docId) => ({
       live: true,
       include_docs: true,
       doc_ids: [docId],
+      // TODO: filter design documents
     });
 
     sync.on("change", ({ direction, change }) => {
@@ -80,7 +81,7 @@ export const userState = atom({
   key: "UserState",
   default: null,
   effects_UNSTABLE: [
-    syncPouchDocumentEffect(localUserDB, remoteUserDB, "user"),
+    syncPouchDocumentEffect(localUserDB, remoteUserDB, "profile"),
   ],
 });
 
