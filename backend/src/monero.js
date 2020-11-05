@@ -8,22 +8,22 @@ const connection = new MoneroRpcConnection({
   rejectUnauthorized: false,
 });
 
-export const createWallet = (password) =>
+export const createWallet = ({ password, language = "English" }) =>
   attemptP(() =>
     createWalletWasm({
       server: connection,
       networkType: "stagenet",
       password,
-      language: "English",
+      language,
     })
   );
 
-export const openWallet = (mnemonic) =>
+export const openWallet = ({ mnemonic, password }) =>
   attemptP(() =>
     createWalletWasm({
       server: connection,
       networkType: "stagenet",
-      password: "password",
+      password,
       mnemonic,
     })
   );

@@ -15,7 +15,7 @@ export const signStreamerToken = (streamer) => {
     privateKey,
     {
       algorithm: "RS256",
-      subject: streamer.seed,
+      subject: streamer.truncated,
       expiresIn: "1h",
     }
   );

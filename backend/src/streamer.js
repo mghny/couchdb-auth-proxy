@@ -1,113 +1,161 @@
-import { attemptP, map, mapRej } from "fluture";
+import { attemptP, chain, map, mapRej } from "fluture";
 import { adminInstance } from "./request";
 
 const fetchF = (config) => attemptP(() => adminInstance.request(config));
+const handleRequestError = (error) => {
+  const failure = {};
+  // const failure = { config: error.config };
+
+  if (error.response) {
+    failure.response = {};
+    failure.response.data = error.response.data;
+    failure.response.status = error.response.status;
+    failure.response.headers = error.response.headers;
+    // } else if (error.request) {
+    //   console.error(error);
+    //   failure.request = error.request;
+  } else {
+    failure.message = error.message;
+  }
+
+  return failure;
+};
 
 // use custom database for streamers
-export const addStreamer = (streamer) =>
+export const addStreamerUser = (streamer) =>
   fetchF({
     method: "put",
-    url: `/_users/org.couchdb.user:${streamer.name}`,
-    // url: `/_users/org.couchdb.user:${streamer.seed}`,
+    url: `/_users/org.couchdb.user:${streamer.truncated}`,
     data: {
+      name: streamer.truncated,
+      // remove after testing
       ...streamer,
-      id: streamer.name,
-      // id: streamer.seed,
-      roles: ["streamer", "user"],
+      roles: ["streamer"],
       type: "user",
     },
   })
     .pipe(map((response) => response.data))
-    .pipe(mapRej((error) => error.response));
+    .pipe(mapRej(handleRequestError));
 
 // streamer user database
-export const addStreamerUserStore = (name) =>
+export const addStreamerProfileStore = (id) =>
   fetchF({
     method: "put",
-    url: `/streamer_user_${name}`,
+    url: `/profile_${id}`,
   })
     .pipe(map((response) => response.data))
-    .pipe(mapRej((error) => error.response));
+    .pipe(mapRej(handleRequestError));
 
 // streamer configuration database
-export const addStreamerConfigurationStore = (name) =>
+export const addStreamerConfigurationStore = (id) =>
   fetchF({
     method: "put",
-    url: `/streamer_configuration_${name}`,
+    url: `/configuration_${id}`,
   })
     .pipe(map((response) => response.data))
-    .pipe(mapRej((error) => error.response));
+    .pipe(mapRej(handleRequestError));
 
 // streamer user security
-export const addStreamerUserSecurity = (name) =>
+export const addStreamerProfileSecurity = (id) =>
   fetchF({
     method: "put",
-    url: `/streamer_user_${name}/_security`,
+    url: `/profile_${id}/_security`,
     data: {
       admins: {
         names: ["admin"],
         roles: [],
       },
       members: {
-        names: ["admin"],
+        names: [id],
         roles: [],
       },
     },
   })
     .pipe(map((response) => response.data))
-    .pipe(mapRej((error) => error.response));
+    .pipe(mapRej(handleRequestError));
 
 // streamer configuration security
-export const addStreamerConfigurationSecurity = (name) =>
+export const addStreamerConfigurationSecurity = (id) =>
   fetchF({
     method: "put",
-    url: `/streamer_configuration_${name}/_security`,
+    url: `/configuration_${id}/_security`,
     data: {
       admins: {
         names: ["admin"],
         roles: [],
       },
       members: {
-        names: ["admin", name],
+        names: [id],
         roles: [],
       },
     },
   })
     .pipe(map((response) => response.data))
-    .pipe(mapRej((error) => error.response));
+    .pipe(mapRej(handleRequestError));
 
 // streamer user document
-export const addStreamerUser = (name) =>
+export const addStreamerProfile = (id) =>
   fetchF({
     method: "put",
-    url: `/streamer_user_${name}/user`,
+    url: `/profile_${id}/profile`,
     data: {
-      name,
+      // id,
       foo: "bar",
     },
   })
     .pipe(map((response) => response.data))
-    .pipe(mapRej((error) => error.response));
+    .pipe(mapRej(handleRequestError));
 
 // streamer configuration document
-export const addStreamerConfiguration = (name) =>
+export const addStreamerConfiguration = (id) =>
   fetchF({
     method: "put",
-    url: `/streamer_configuration_${name}/configuration`,
+    url: `/configuration_${id}/configuration`,
     data: {
-      name,
+      // id,
       foo: "baz",
     },
   })
     .pipe(map((response) => response.data))
-    .pipe(mapRej((error) => error.response));
+    .pipe(mapRej(handleRequestError));
+
+// streamer user document
+export const addStreamerProfileProtection = (id) =>
+  fetchF({
+    method: "put",
+    url: `/profile_${id}/_design/authorize_ro_protection`,
+    data: getReadOnlyProtectionDesignDocument(),
+  })
+    .pipe(map((response) => response.data))
+    .pipe(mapRej(handleRequestError));
+
+// streamer configuration document
+export const addStreamerConfigurationProtection = (id) =>
+  fetchF({
+    method: "put",
+    url: `/configuration_${id}/_design/authorize_rw_protection`,
+    data: getReadWriteProtectionDesignDocument(id),
+  })
+    .pipe(map((response) => response.data))
+    .pipe(mapRej(handleRequestError));
+
+export const addStreamer = (streamer) =>
+  addStreamerUser(streamer)
+    .pipe(chain(() => addStreamerProfileStore(streamer.truncated)))
+    .pipe(chain(() => addStreamerProfileSecurity(streamer.truncated)))
+    .pipe(chain(() => addStreamerProfileProtection(streamer.truncated)))
+    .pipe(chain(() => addStreamerProfile(streamer.truncated)))
+    .pipe(chain(() => addStreamerConfigurationStore(streamer.truncated)))
+    .pipe(chain(() => addStreamerConfigurationSecurity(streamer.truncated)))
+    .pipe(chain(() => addStreamerConfigurationProtection(streamer.truncated)))
+    .pipe(chain(() => addStreamerConfiguration(streamer.truncated)));
 
 export const getStreamers = () =>
   fetchF({
     method: "post",
     url: `/_users/_find`,
     data: {
-      fields: ["name"],
+      // fields: ["name"],
       selector: {
         roles: {
           $elemMatch: {
@@ -118,16 +166,16 @@ export const getStreamers = () =>
     },
   })
     .pipe(map((response) => response.data.docs))
-    .pipe(mapRej((error) => error.response));
+    .pipe(mapRej(handleRequestError));
 
 export const findStreamerBySeed = (seed) =>
   fetchF({
     method: "post",
     url: `/_users/_find`,
     data: {
-      fields: ["name", "seed"],
+      // fields: ["name", "seed"],
       selector: {
-        seed: seed,
+        hash: seed,
         roles: {
           $elemMatch: {
             $eq: "streamer",
@@ -138,33 +186,46 @@ export const findStreamerBySeed = (seed) =>
   })
     .pipe(map((response) => response.data.docs))
     .pipe(map((docs) => docs[0]))
-    .pipe(mapRej((error) => error.response));
+    .pipe(mapRej(handleRequestError));
 
-// design document to enforce non admin read only access
-const ddAuthRO = {
-  _id: "_design/authorize_read_only",
+// https://github.com/pouchdb-community/pouchdb-authentication/blob/master/docs/recipes.md#some-people-can-read-some-docs-some-people-can-write-those-same-docs
+const getReadOnlyProtectionDesignDocument = () => ({
   validate_doc_update: `
     function(newDoc, oldDoc, userCtx) {
-        var IS_DB_ADMIN = false;
+      var IS_DB_ADMIN = false;
 
-        if (~userCtx.roles.indexOf('_admin')) {
-            IS_DB_ADMIN = true;
-        }
+      if (~userCtx.roles.indexOf('_admin')) {
+        IS_DB_ADMIN = true;
+      }
         
-        if (IS_DB_ADMIN) {
-            log('Admin change on read-only db: ' + newDoc._id);
-        } else {
-            throw({ forbidden : 'read only' });
-        }
+      if (IS_DB_ADMIN) {
+        return;
+      } else {
+        throw({ forbidden : 'read only' });
+      }
     }
-    `,
-};
+  `.replace("\n", ""),
+});
 
-const ddAuthRW = {
-  _id: "_design/authorize_read_write",
+const getReadWriteProtectionDesignDocument = (name) => ({
   validate_doc_update: `
     function(newDoc, oldDoc, userCtx) {
-        throw({ forbidden : 'not able now!' });
+      var IS_DB_ADMIN = false;
+      var IS_DB_MEMBER = false;
+
+      if (~userCtx.roles.indexOf('_admin')) {
+        IS_DB_ADMIN = true;
+      }
+
+      if (userCtx.name === '${name}') {
+        IS_DB_MEMBER = true;
+      }
+        
+      if (IS_DB_ADMIN || IS_DB_MEMBER) {
+        return;
+      } else {
+        throw({ forbidden : 'not a member' });
+      }
     }
-    `,
-};
+  `.replace("\n", ""),
+});

@@ -10,8 +10,6 @@ import { findStreamerBySeed } from "./streamer";
 import { getUserContext } from "./session";
 import { signStreamerToken } from "./token";
 
-export function bootstrap() {}
-
 // thank you kent
 // https://github.com/kentcdodds/express-app-example/blob/master/src/start.js
 export function startServer({ port }) {
@@ -27,16 +25,14 @@ export function startServer({ port }) {
   );
 
   app.use(
-    "/api/v1/user",
+    "/api/v1/profile",
     createProxyMiddleware({
       target: "http://localhost:5984",
       changeOrigin: true,
       pathRewrite: (path, request) =>
         getUserContext(request.headers.authorization)
           .then((context) => context.name)
-          .then((name) =>
-            path.replace("/api/v1/user", `/streamer_user_${name}`)
-          ),
+          .then((name) => path.replace("/api/v1/profile", `/profile_${name}`)),
     })
   );
 
@@ -49,21 +45,10 @@ export function startServer({ port }) {
         getUserContext(request.headers.authorization)
           .then((context) => context.name)
           .then((name) =>
-            path.replace(
-              "/api/v1/configuration",
-              `/streamer_configuration_${name}`
-            )
+            path.replace("/api/v1/configuration", `/configuration_${name}`)
           ),
     })
   );
-
-  // app.use(
-  //   "/api/v1",
-  //   createProxyMiddleware({
-  //     target: "http://localhost:5984",
-  //     changeOrigin: true,
-  //   })
-  // );
 
   io.on("connect", (socket) => {
     console.log("connect", socket.id);
@@ -110,10 +95,10 @@ function setupCloseOnExit(server) {
     await server
       .close()
       .then(() => {
-        log.info("Server successfully closed");
+        console.info("Server successfully closed");
       })
       .catch((e) => {
-        log.warn("Something went wrong closing the server", e.stack);
+        console.warn("Something went wrong closing the server", e.stack);
       });
 
     // eslint-disable-next-line no-process-exit
